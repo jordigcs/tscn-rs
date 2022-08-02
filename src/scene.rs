@@ -60,6 +60,7 @@ impl Scene {
                 }
                 _ => {}
             }
+            //current_element.tokens.push(token.clone());
             if element_finished {
                 element_finished = false;
                 elements.push(current_element);

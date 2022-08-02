@@ -109,6 +109,15 @@ impl Tokenizer {
                     }
                 },
                 ']' => {
+                    if let Some(next) = &next_token {
+                        match next {
+                            Token::ELEMENT_DATA_VALUE(..) => {
+                                next_token = None;
+                                tokenizer.tokens.push(Token::ELEMENT_DATA_VALUE(consume_current_string(&mut current_string)));
+                            },
+                            _ => {}
+                        }
+                    }
                     current_token = Token::BRACKET_RIGHT;
                 },
                 // Unused code for Quotes as tokens. Removed because you can have types other than Strings as property values.
