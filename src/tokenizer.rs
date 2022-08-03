@@ -125,6 +125,9 @@ pub enum TokenizerError {
 
 impl Tokenizer {
     fn append_current_string(&mut self, character:char, end_chars:&[char]) {
+        if character == '"' || character == '\'' {
+            self.in_quote = !self.in_quote; // If we're not in a quote, now we are. If we were already in a quote, now we aren't :O
+        }
         if let Some(mut string) = self.current_string.clone() {
             if string.chars().into_iter().filter(|c| !end_chars.contains(c)).count() > 0 { // Check if string has chars other than space or equals.
                 if end_chars.contains(&character) {
@@ -136,9 +139,6 @@ impl Tokenizer {
                 else {
                     self.current_string_completed = false;
                 }
-            }
-            else if character == '"' || character == '\'' {
-                self.in_quote = !self.in_quote; // If we're not in a quote, now we are. If we were already in a quote, now we aren't :O
             }
             string.push(character);
             self.current_string = Some(string.to_string());
