@@ -1,2 +1,22 @@
 [gd_scene load_steps=13 format=3 uid="uid://c8uauq5wqwkkq"]
-[poop load_steps=13 format=3 uid="uid://c8uauq5wqwkkq"]
+
+[ext_resource type="TileSet" uid="uid://c01v1xb6im3d8" path="res://tex/tiles/tiles.tres" id="1"]
+
+[sub_resource type="RectangleShape2D" id="5"]
+size = Vector2(200, 112)
+
+[sub_resource type="RectangleShape2D" id="8"]
+
+[node name="Front Door" type="Node2D"]
+texture_filter = 1
+y_sort_enabled = true
+script = ExtResource( "1_mx1cw" )
+preset_party_members = ["myti"]
+spawn_points = ["Start Point", "From Living Room", "From Room Of Ball", "From Jem Home Entrance"]
+song_event_path = "event:/Music/Opal"
+
+[node name="Camera2D" type="Camera2D" parent="."]
+current = true
+zoom = Vector2(2, 2)
+
+[connection signal="body_entered" from="To Living Room" to="To Living Room" method="_on_Area2D_body_entered"]

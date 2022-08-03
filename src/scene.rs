@@ -1,79 +1,43 @@
 use std::{io};
 
-use crate::tokenizer::{Element, Token, ExpectedType, ElementData, Tokenizer, TokenizerError, };
+use crate::tokenizer::{Token, Tokenizer, TokenizerError, };
+use crate::element::{ElementData, Element, ExpectedType, ElementType,};
 
 #[derive(Debug)]
 pub struct Scene {
-    pub elements:Vec<Element>
+    pub scene_data:Vec<Element>,
+    pub resources:Vec<Element>,
+    pub nodes:Vec<Element>,
+    pub unkown_elements:Vec<Element>,
+    pub tokenizer:Tokenizer,
 }
 
 #[derive(Debug)]
 pub enum SceneError {
-    NotFound(ExpectedType),
     TokenizerError(TokenizerError),
     LoadFailed(io::Error),
     UnexpectedErr,
 }
 
 impl Scene {
-    pub fn from_elements(elements:Vec<Element>) -> Self {
-        Self { elements, }
+    pub fn filter_elements(elements:Vec<Element>, element_type:ElementType) -> Vec<Element> {
+        elements.into_iter().filter(|element| element.element_type == element_type).collect::<Vec<Element>>()
     }
 
-    pub fn from_tokens(tokens:Vec<Token>) -> Result<Self, SceneError> {
-        let mut elements:Vec<Element> = Vec::new();
-        let mut current_element:Element = Element::empty();
-        let mut element_finished:bool = false;
-        for token in tokens.iter() {
-            match token {
-                Token::ELEMENT_NAME(name) => {
-                    if let Some(string) = name {
-                        current_element.element_name = string.to_string();
-                    }
-                    else {
-                        return Err(SceneError::NotFound(ExpectedType::ElementDataName));
-                    }
-                },
-                Token::ELEMENT_DATA_NAME(name) => {
-                    if let Some(string) = name {
-                        current_element.element_data.push(ElementData(string.to_string(), String::new()));
-                    }
-                    else {
-                        return Err(SceneError::NotFound(ExpectedType::ElementDataName));
-                    }
-                },
-                Token::ELEMENT_DATA_VALUE(value) => {
-                    if let Some(string) = value {
-                        if let Some(data) = current_element.element_data.last_mut() {
-                            data.1 = string.to_string();
-                        }
-                        else {
-                            return Err(SceneError::UnexpectedErr)
-                        }
-                    }
-                    else {
-                        return Err(SceneError::NotFound(ExpectedType::ElementDataValue));
-                    }
-                },
-                Token::BRACKET_RIGHT => {
-                    element_finished = true;
-                }
-                _ => {}
-            }
-            //current_element.tokens.push(token.clone());
-            if element_finished {
-                element_finished = false;
-                elements.push(current_element);
-                current_element = Element::empty();
-            }
-        }
-        Ok(Self { elements, })
+    pub fn add_elements(&mut self, elements:Vec<Element>) {
+        self.nodes.append(&mut Scene::filter_elements(elements, ElementType::NODE));
     }
 
     pub fn from_tscn_content(file_content:&str) -> Result<Self, SceneError> {
         match Tokenizer::tokenize(file_content) {
             Ok(tokenizer) => {
-                Scene::from_tokens(tokenizer.tokens)
+                Ok(Self {
+                    scene_data: Scene::filter_elements(tokenizer.elements.clone(), ElementType::SCENE_DATA),
+                    resources: Scene::filter_elements(tokenizer.elements.clone(), ElementType::RESOURCE),
+                    nodes: Scene::filter_elements(tokenizer.elements.clone(), ElementType::NODE),
+                    unkown_elements: Scene::filter_elements(tokenizer.elements.clone(), ElementType::UNKOWN),
+                    tokenizer
+                })
             },
             Err(error) => {
                 Err(SceneError::TokenizerError(error))
