@@ -10,9 +10,12 @@ mod tests {
     #[test]
     fn tokenize() {
         let scene = loader::load(r"C:\Users\jordi\Projects\tscn\src\test.tscn");
-        if let Ok(sc) = scene {
-            println!("SCENE!\n{:?}", sc.scene_data);
-            println!("RECONSTRUCT!\n{}", Tokenizer::reconstruct_tscn_from_tokens(sc.tokenizer.tokens));
+        if let Ok(mut sc) = scene {
+            println!("Tokens\n{:#?}", sc.elements[0].tokens);
+            sc.elements[0].element_data[0].1 = String::from("Test");
+            sc.elements[0].update_tokens();
+            println!("Updated Tokens\n{:#?}", sc.elements[0].tokens);
+            println!("RECONSTRUCT!\n{}", sc.to_tscn());
         }
     }
 }

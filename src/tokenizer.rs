@@ -1,6 +1,6 @@
 use std::{thread::current, fmt::Error, mem::{discriminant, Discriminant}, ops::Deref, rc::Rc};
 
-use crate::{scene::{self, Scene, SceneError}, element::{Element, ExpectedType, ElementData, ElementType}};
+use crate::{scene::{self, Scene, SceneError}, element::{Element, ExpectedType, ElementData, ElementType, Property}};
 
 // #[derive(PartialEq, Clone)]
 // pub enum Value {
@@ -180,7 +180,6 @@ impl Tokenizer {
 
             match c {
                 '[' => {
-                    current_token = Token::BRACKET_LEFT;
                     let mut is_value:bool = false;
                      if let Some(next) = &next_token {
                          if let Token::PROPERTY_VALUE(_) | Token::ELEMENT_DATA_VALUE(..) = next {
@@ -188,6 +187,7 @@ impl Tokenizer {
                         }
                     }
                    if !is_value {
+                        current_token = Token::BRACKET_LEFT;
                         next_token = Some(Token::ELEMENT_NAME(None));
                   }
                 },
@@ -361,12 +361,33 @@ impl Tokenizer {
                         return Err(TokenizerError::NotFound(ExpectedType::ElementDataValue));
                     }
                 },
+                Token::PROPERTY_NAME(name) => {
+                    if let Some(string) = name {
+                        current_element.properties.push(Property(string.to_string(), String::new()));
+                    }
+                    else {
+                        return Err(TokenizerError::NotFound(ExpectedType::PropertyName));
+                    }
+                },
+                Token::PROPERTY_VALUE(value) => {
+                    if let Some(string) = value {
+                        if let Some(data) = current_element.properties.last_mut() {
+                            data.1 = string.to_string();
+                        }
+                        else {
+                            return Err(TokenizerError::UnexpectedErr)
+                        }
+                    }
+                    else {
+                        return Err(TokenizerError::NotFound(ExpectedType::PropertyValue));
+                    }
+                },
                 Token::BRACKET_RIGHT => {
                     element_finished = true;
                 }
                 _ => {}
             }
-            //current_element.tokens.push(token.clone());
+            current_element.tokens.push(token.clone());
             if element_finished {
                 element_finished = false;
                 elements.push(current_element);
@@ -377,9 +398,7 @@ impl Tokenizer {
     }
 
     pub fn to_tscn_content(&self) -> String {
-        self.tokens.iter().map(|token| {
-            token.to_string() + if token.requires_space_suffix() { " " } else { "" }
-        }).collect::<String>()
+        Tokenizer::reconstruct_tscn_from_tokens(self.tokens.clone())
     }
 
     pub fn reconstruct_tscn_from_tokens(tokens:Vec<Token>) -> String {

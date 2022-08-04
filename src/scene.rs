@@ -5,10 +5,7 @@ use crate::element::{ElementData, Element, ExpectedType, ElementType,};
 
 #[derive(Debug)]
 pub struct Scene {
-    pub scene_data:Vec<Element>,
-    pub resources:Vec<Element>,
-    pub nodes:Vec<Element>,
-    pub unkown_elements:Vec<Element>,
+    pub elements:Vec<Element>,
     pub tokenizer:Tokenizer,
 }
 
@@ -24,18 +21,24 @@ impl Scene {
         elements.into_iter().filter(|element| element.element_type == element_type).collect::<Vec<Element>>()
     }
 
-    pub fn add_elements(&mut self, elements:Vec<Element>) {
-        self.nodes.append(&mut Scene::filter_elements(elements, ElementType::NODE));
+    pub fn add_elements(&mut self, mut elements:Vec<Element>) {
+        self.elements.append(&mut elements);
+    }
+
+    pub fn to_tscn(self) -> String {
+        let mut tokens:Vec<Token> = Vec::new();
+        for mut element in self.elements.into_iter() {
+            element.update_tokens();
+            tokens.append(&mut element.tokens);
+        }
+        Tokenizer::reconstruct_tscn_from_tokens(tokens)
     }
 
     pub fn from_tscn_content(file_content:&str) -> Result<Self, SceneError> {
         match Tokenizer::tokenize(file_content) {
             Ok(tokenizer) => {
                 Ok(Self {
-                    scene_data: Scene::filter_elements(tokenizer.elements.clone(), ElementType::SCENE_DATA),
-                    resources: Scene::filter_elements(tokenizer.elements.clone(), ElementType::RESOURCE),
-                    nodes: Scene::filter_elements(tokenizer.elements.clone(), ElementType::NODE),
-                    unkown_elements: Scene::filter_elements(tokenizer.elements.clone(), ElementType::UNKOWN),
+                    elements:tokenizer.elements.clone(),
                     tokenizer
                 })
             },
