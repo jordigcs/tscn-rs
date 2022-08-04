@@ -1,6 +1,6 @@
-use std::{thread::current, fmt::Error, mem::{discriminant, Discriminant}, ops::Deref, rc::Rc};
+use std::{ops::Deref, rc::Rc};
 
-use crate::{scene::{self, Scene, SceneError}, element::{Element, ExpectedType, ElementData, ElementType, Property}};
+use crate::{element::{Element, ExpectedType, ElementData, ElementType, Property}};
 
 // #[derive(PartialEq, Clone)]
 // pub enum Value {
@@ -156,7 +156,7 @@ impl Tokenizer {
         self.current_string = None;
         self.current_string_completed = false;
         self.in_quote = false;
-        return new;
+        new
     }
 
     pub fn tokenize(tscn:&str) -> Result<Tokenizer, TokenizerError> {
@@ -309,7 +309,7 @@ impl Tokenizer {
                 return Err(error);
             },
         }
-        return Ok(tokenizer);
+        Ok(tokenizer)
     }
 
     pub fn elements_from_tokens(&self) -> Result<Vec<Element>, TokenizerError> {

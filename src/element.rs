@@ -45,9 +45,9 @@ impl Element {
         
         // Append ElementData tokens.
         tokens.append(
-            &mut self.element_data.iter().map(|element_data| {
+            &mut self.element_data.iter().flat_map(|element_data| {
                 element_data.to_tokens().to_vec()
-            }).flatten().collect()
+            }).collect()
         );
         // Close element
         tokens.push(Token::BRACKET_RIGHT);
@@ -55,11 +55,11 @@ impl Element {
         if !self.properties.is_empty() {
             // Append property tokens
             tokens.append(
-                &mut self.properties.iter().map(|property| {
+                &mut self.properties.iter().flat_map(|property| {
                     let mut v = property.to_tokens().to_vec();
                     v.push(Token::NEW_LINE);
                     v
-                }).flatten().collect()
+                }).collect()
             );
             tokens.push(Token::NEW_LINE);
         }

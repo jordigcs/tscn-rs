@@ -1,7 +1,7 @@
 use std::{io};
 
 use crate::tokenizer::{Token, Tokenizer, TokenizerError, };
-use crate::element::{ElementData, Element, ExpectedType, ElementType,};
+use crate::element::{Element, ElementType,};
 
 #[derive(Debug)]
 pub struct Scene {
