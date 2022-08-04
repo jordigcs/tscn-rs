@@ -25,7 +25,7 @@ pub enum Token {
     PropertyName(Option<String>),
     PropertyValue(Option<String>),
     //Control
-    SKIP_TO(Rc<Token>),
+    SkipTo(Rc<Token>),
 }
 
 impl Token {
@@ -169,7 +169,7 @@ impl Tokenizer {
                     Token::Invalid => {
                         return Err(TokenizerError::InvalidChar(index));
                     },
-                    Token::SKIP_TO(new_next_token) => {
+                    Token::SkipTo(new_next_token) => {
                         next_token = Some(new_next_token.deref().clone());
                         continue;
                     },
@@ -273,7 +273,7 @@ impl Tokenizer {
                                     if let Some(next_char) = tscn.chars().nth(index+1) {
                                         if next_char == '=' {
                                             // skip '=' and jump to PropertyValue
-                                            next_token = Some(Token::SKIP_TO(Rc::new(Token::PropertyValue(None))));
+                                            next_token = Some(Token::SkipTo(Rc::new(Token::PropertyValue(None))));
                                             current_token = Token::PropertyName(tokenizer.consume_current_string());
                                         }
                                     }
