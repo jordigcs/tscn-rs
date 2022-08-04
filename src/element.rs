@@ -5,7 +5,7 @@ use crate::tokenizer::Token;
 pub struct Property(pub String, pub String);
 impl Property {
     pub fn to_tokens(&self) -> [Token;2] {
-        [Token::PROPERTY_NAME(Some(self.0.clone())), Token::PROPERTY_VALUE(Some(self.1.clone()))]
+        [Token::PropertyName(Some(self.0.clone())), Token::PropertyValue(Some(self.1.clone()))]
     }
 }
 
@@ -13,7 +13,7 @@ impl Property {
 pub struct ElementData(pub String, pub String); // 0: Name, 1: Value
 impl ElementData {
     pub fn to_tokens(&self) -> [Token;2] {
-        [Token::ELEMENT_DATA_NAME(Some(self.0.clone())), Token::ELEMENT_DATA_VALUE(Some(self.1.clone()))]
+        [Token::ElementDataName(Some(self.0.clone())), Token::ElementDataValue(Some(self.1.clone()))]
     }
 }
 
@@ -41,7 +41,7 @@ impl Element {
     }
     
     pub fn update_tokens(&mut self) {
-        let mut tokens:Vec<Token> = vec![Token::BRACKET_LEFT, Token::ELEMENT_NAME(Some(self.element_name.clone()))]; // Elements start with [element_name
+        let mut tokens:Vec<Token> = vec![Token::BracketLeft, Token::ElementName(Some(self.element_name.clone()))]; // Elements start with [element_name
         
         // Append ElementData tokens.
         tokens.append(
@@ -50,18 +50,18 @@ impl Element {
             }).collect()
         );
         // Close element
-        tokens.push(Token::BRACKET_RIGHT);
-        tokens.push(Token::NEW_LINE);
+        tokens.push(Token::BracketRight);
+        tokens.push(Token::NewLine);
         if !self.properties.is_empty() {
             // Append property tokens
             tokens.append(
                 &mut self.properties.iter().flat_map(|property| {
                     let mut v = property.to_tokens().to_vec();
-                    v.push(Token::NEW_LINE);
+                    v.push(Token::NewLine);
                     v
                 }).collect()
             );
-            tokens.push(Token::NEW_LINE);
+            tokens.push(Token::NewLine);
         }
 
         // Update complete.

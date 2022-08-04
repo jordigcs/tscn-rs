@@ -10,21 +10,20 @@ use crate::{element::{Element, ExpectedType, ElementData, ElementType, Property}
 //     Int(i32),
 // }
 
-type DataIdentifier = String;
 #[derive(PartialEq, Clone, Debug)]
 pub enum Token {
-    UNRESOLVED,
-    INVALID,
-    BRACKET_LEFT,
-    BRACKET_RIGHT,
-    NEW_LINE,
+    Unresolved,
+    Invalid,
+    BracketLeft,
+    BracketRight,
+    NewLine,
     // Elements
-    ELEMENT_NAME(Option<String>),
-    ELEMENT_DATA_NAME(Option<String>),
-    ELEMENT_DATA_VALUE(Option<String>),
+    ElementName(Option<String>),
+    ElementDataName(Option<String>),
+    ElementDataValue(Option<String>),
     // Element properties
-    PROPERTY_NAME(Option<String>),
-    PROPERTY_VALUE(Option<String>),
+    PropertyName(Option<String>),
+    PropertyValue(Option<String>),
     //Control
     SKIP_TO(Rc<Token>),
 }
@@ -32,70 +31,70 @@ pub enum Token {
 impl Token {
     pub fn to_string(&self) -> String {
         match self {
-            Token::BRACKET_LEFT => {
+            Token::BracketLeft => {
                 String::from('[')
             },
-            Token::BRACKET_RIGHT => {
+            Token::BracketRight => {
                 String::from(']')
             },
-            Token::NEW_LINE => {
+            Token::NewLine => {
                 String::from('\n')
             },
-            Token::INVALID => {
-                String::from("{INVALID}")
+            Token::Invalid => {
+                String::from("{Invalid}")
             },
-            Token::ELEMENT_NAME(val) => {
+            Token::ElementName(val) => {
                 if let Some(string) = val {
                     String::from(string)
                 }
                 else {
-                    String::from("{UNRESOLVED}")
+                    String::from("{Unresolved}")
                 }
             },
-            Token::ELEMENT_DATA_NAME(val) => {
+            Token::ElementDataName(val) => {
                 if let Some(string) = val {
                     let mut n = string.clone();
                     n.push('=');
                     String::from(&n)
                 }
                 else {
-                    String::from("{UNRESOLVED}")
+                    String::from("{Unresolved}")
                 }
             },
-            Token::ELEMENT_DATA_VALUE(val) => {
+            Token::ElementDataValue(val) => {
                 if let Some(string) = val {
                     String::from(string)
                 }
                 else {
-                    String::from("{UNRESOLVED}")
+                    String::from("{Unresolved}")
                 }
             },
-            Token::PROPERTY_NAME(val) => {
+            Token::PropertyName(val) => {
                 if let Some(string) = val {
                     let mut n = string.clone();
                     n += " = ";
                     String::from(&n)
                 }
                 else {
-                    String::from("{UNRESOLVED}")
+                    String::from("{Unresolved}")
                 }
             },
-            Token::PROPERTY_VALUE(val) => {
+            Token::PropertyValue(val) => {
                 if let Some(string) = val {
                     string.to_string()
                 }
                 else {
-                    String::from("{UNRESOLVED}")
+                    String::from("{Unresolved}")
                 }
             },
-            Token::UNRESOLVED | _ => {
+            Token::Unresolved | _ => {
                  String::from("{UNDEFINED}")
             }
         }
     }
     fn requires_space_suffix(&self) -> bool {
         match self {
-            Token::ELEMENT_NAME(..) | Token::ELEMENT_DATA_VALUE(..) => {
+            Token::ElementName(..) | Token::ElementDataValue(..) => {
                 true
             },
             _ => {
@@ -163,11 +162,11 @@ impl Tokenizer {
         let mut tokenizer = Tokenizer { elements: Vec::new(), tokens: Vec::new(), current_string:None, in_quote: false, current_string_completed: false, };
         let mut next_token:Option<Token> = None;
         for (index, c) in tscn.chars().enumerate() {
-            let mut current_token:Token = Token::UNRESOLVED;
+            let mut current_token:Token = Token::Unresolved;
 
             if let Some(next) = &next_token {
                 match next {
-                    Token::INVALID => {
+                    Token::Invalid => {
                         return Err(TokenizerError::InvalidChar(index));
                     },
                     Token::SKIP_TO(new_next_token) => {
@@ -182,39 +181,39 @@ impl Tokenizer {
                 '[' => {
                     let mut is_value:bool = false;
                      if let Some(next) = &next_token {
-                         if let Token::PROPERTY_VALUE(_) | Token::ELEMENT_DATA_VALUE(..) = next {
+                         if let Token::PropertyValue(_) | Token::ElementDataValue(..) = next {
                             is_value = true;
                         }
                     }
                    if !is_value {
-                        current_token = Token::BRACKET_LEFT;
-                        next_token = Some(Token::ELEMENT_NAME(None));
+                        current_token = Token::BracketLeft;
+                        next_token = Some(Token::ElementName(None));
                   }
                 },
                 ']' => {
                     if let Some(next) = &next_token {
                         match next {
-                            Token::ELEMENT_DATA_VALUE(..) => {
+                            Token::ElementDataValue(..) => {
                                 next_token = None;
                                 let token_value = tokenizer.consume_current_string();
-                                tokenizer.tokens.push(Token::ELEMENT_DATA_VALUE(token_value));
+                                tokenizer.tokens.push(Token::ElementDataValue(token_value));
                             },
-                            Token::PROPERTY_VALUE(..) => {
+                            Token::PropertyValue(..) => {
                                 next_token = None;
                                 let token_value = tokenizer.consume_current_string();
-                                tokenizer.tokens.push(Token::PROPERTY_VALUE(token_value));
+                                tokenizer.tokens.push(Token::PropertyValue(token_value));
                             }
                             _ => {}
                         }
                     }
-                    current_token = Token::BRACKET_RIGHT;
+                    current_token = Token::BracketRight;
                 },
                 '\n' => {
                     let mut token_mutated:bool = false;
                     if let Some(last) = tokenizer.tokens.last() {
                         match last {
-                            Token::BRACKET_RIGHT => {
-                                next_token = Some(Token::PROPERTY_NAME(None));
+                            Token::BracketRight => {
+                                next_token = Some(Token::PropertyName(None));
                                 token_mutated = true;
                             },
                             _ => {}
@@ -223,59 +222,59 @@ impl Tokenizer {
                     if !token_mutated {
                         if let Some(next) = &next_token {
                             match next {
-                                Token::PROPERTY_VALUE(..) => {
-                                    next_token = Some(Token::PROPERTY_NAME(None));
+                                Token::PropertyValue(..) => {
+                                    next_token = Some(Token::PropertyName(None));
                                     let prop_value = tokenizer.consume_current_string();
-                                    tokenizer.tokens.push(Token::PROPERTY_VALUE(prop_value));
+                                    tokenizer.tokens.push(Token::PropertyValue(prop_value));
                                 },
                                 _ => {}
                             }
                         }
                     }
-                    current_token = Token::NEW_LINE;
+                    current_token = Token::NewLine;
                 }
                 _ => {
                     if let Some(next) = &next_token {
                         match next {
-                            Token::ELEMENT_NAME(..) => {
+                            Token::ElementName(..) => {
                                 tokenizer.append_current_string(c, &[' ']);
                                 if tokenizer.current_string_completed {
-                                    next_token = Some(Token::ELEMENT_DATA_NAME(None));
-                                    current_token = Token::ELEMENT_NAME(tokenizer.consume_current_string());
+                                    next_token = Some(Token::ElementDataName(None));
+                                    current_token = Token::ElementName(tokenizer.consume_current_string());
                                 }
                                 else {
                                     continue;
                                 }
                             },
-                            Token::ELEMENT_DATA_NAME(..) => {
+                            Token::ElementDataName(..) => {
                                 tokenizer.append_current_string(c, &[' ', '=']);
                                 if tokenizer.current_string_completed {
-                                    // skip '=' and jump to ELEMENT_DATA_VALUE
-                                    next_token = Some(Token::ELEMENT_DATA_VALUE(None));
-                                    current_token = Token::ELEMENT_DATA_NAME(tokenizer.consume_current_string());
+                                    // skip '=' and jump to ElementDataValue
+                                    next_token = Some(Token::ElementDataValue(None));
+                                    current_token = Token::ElementDataName(tokenizer.consume_current_string());
                                 }
                                 else {
                                     continue;
                                 }
                             },
-                            Token::ELEMENT_DATA_VALUE(..) => {
+                            Token::ElementDataValue(..) => {
                                 tokenizer.append_current_string(c,  &[' ']);
                                 if tokenizer.current_string_completed {
-                                    next_token = Some(Token::ELEMENT_DATA_NAME(None));
-                                    current_token = Token::ELEMENT_DATA_VALUE(tokenizer.consume_current_string());
+                                    next_token = Some(Token::ElementDataName(None));
+                                    current_token = Token::ElementDataValue(tokenizer.consume_current_string());
                                 }
                                 else {
                                     continue;
                                 }
                             },
-                            Token::PROPERTY_NAME(..) => {
+                            Token::PropertyName(..) => {
                                 tokenizer.append_current_string(c, &[' ', '=']);
                                 if tokenizer.current_string_completed {
                                     if let Some(next_char) = tscn.chars().nth(index+1) {
                                         if next_char == '=' {
-                                            // skip '=' and jump to PROPERTY_VALUE
-                                            next_token = Some(Token::SKIP_TO(Rc::new(Token::PROPERTY_VALUE(None))));
-                                            current_token = Token::PROPERTY_NAME(tokenizer.consume_current_string());
+                                            // skip '=' and jump to PropertyValue
+                                            next_token = Some(Token::SKIP_TO(Rc::new(Token::PropertyValue(None))));
+                                            current_token = Token::PropertyName(tokenizer.consume_current_string());
                                         }
                                     }
                                     else {
@@ -286,7 +285,7 @@ impl Tokenizer {
                                     continue;
                                 }
                             },
-                            Token::PROPERTY_VALUE(..) => {
+                            Token::PropertyValue(..) => {
                                 tokenizer.append_current_string(c, &[]);
                                 // current_string is consumed in the '\n' match branch since property values can only be single line.
                                 continue;
@@ -318,7 +317,7 @@ impl Tokenizer {
         let mut element_finished:bool = false;
         for token in self.tokens.iter() {
             match token {
-                Token::ELEMENT_NAME(name) => {
+                Token::ElementName(name) => {
                     if let Some(string) = name {
                         match &string[..] { // Convert to &[slice] to match against &str 
                             "gd_scene" | "connection" => {
@@ -340,7 +339,7 @@ impl Tokenizer {
                         return Err(TokenizerError::NotFound(ExpectedType::ElementDataName));
                     }
                 },
-                Token::ELEMENT_DATA_NAME(name) => {
+                Token::ElementDataName(name) => {
                     if let Some(string) = name {
                         current_element.element_data.push(ElementData(string.to_string(), String::new()));
                     }
@@ -348,7 +347,7 @@ impl Tokenizer {
                         return Err(TokenizerError::NotFound(ExpectedType::ElementDataName));
                     }
                 },
-                Token::ELEMENT_DATA_VALUE(value) => {
+                Token::ElementDataValue(value) => {
                     if let Some(string) = value {
                         if let Some(data) = current_element.element_data.last_mut() {
                             data.1 = string.to_string();
@@ -361,7 +360,7 @@ impl Tokenizer {
                         return Err(TokenizerError::NotFound(ExpectedType::ElementDataValue));
                     }
                 },
-                Token::PROPERTY_NAME(name) => {
+                Token::PropertyName(name) => {
                     if let Some(string) = name {
                         current_element.properties.push(Property(string.to_string(), String::new()));
                     }
@@ -369,7 +368,7 @@ impl Tokenizer {
                         return Err(TokenizerError::NotFound(ExpectedType::PropertyName));
                     }
                 },
-                Token::PROPERTY_VALUE(value) => {
+                Token::PropertyValue(value) => {
                     if let Some(string) = value {
                         if let Some(data) = current_element.properties.last_mut() {
                             data.1 = string.to_string();
@@ -382,7 +381,7 @@ impl Tokenizer {
                         return Err(TokenizerError::NotFound(ExpectedType::PropertyValue));
                     }
                 },
-                Token::BRACKET_RIGHT => {
+                Token::BracketRight => {
                     element_finished = true;
                 }
                 _ => {}
