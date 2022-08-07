@@ -1,4 +1,4 @@
-use std::{ops::Deref, rc::Rc, io::{BufReader, Read, BufRead}, fs::File};
+use std::{ops::Deref, rc::Rc, io::{BufReader, BufRead}, fs::File};
 
 use crate::{element::{Element, ExpectedType, ElementData, ElementType, Property}};
 
@@ -163,7 +163,7 @@ impl Tokenizer {
         let mut next_token:Option<Token> = None;
         let mut current_line:u16 = 0;
         let mut line_beginning_char_index:usize = 0;
-        let mut index:usize = 0;
+        let _index:usize = 0;
         
         'lines: for _ in 0..line_count {
             let mut line = String::new();

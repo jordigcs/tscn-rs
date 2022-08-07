@@ -5,7 +5,7 @@ mod element;
 
 #[cfg(test)]
 mod tests {
-    use crate::{loader, scene::{NodePath, Scene}};
+    use crate::{scene::{NodePath, Scene}};
 
     #[test]
     fn tokenize() {

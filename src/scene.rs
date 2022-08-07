@@ -1,4 +1,4 @@
-use std::rc::Rc;
+
 use std::{io};
 
 use crate::loader;
@@ -52,7 +52,7 @@ impl From<&str> for NodePath {
         let mut node_name:String = String::new();
         match path.pop() {
             Some(name) => {
-                node_name = String::from(name);
+                node_name = name;
             },
             None => {
                 return NodePath::return_invalid("Path not formatted correctly.")
@@ -64,15 +64,15 @@ impl From<&str> for NodePath {
 
 impl Scene {
     pub fn filter_elements(elements:&Vec<Element>, element_type:ElementType) -> Vec<&Element> {
-        elements.into_iter().filter(|element| element.element_type == element_type).collect::<Vec<&Element>>()
+        elements.iter().filter(|element| element.element_type == element_type).collect::<Vec<&Element>>()
     }
 
     pub fn add_elements(&mut self, mut elements:Vec<Element>) {
         self.elements.append(&mut elements);
     }
 
-    pub fn get_node_property(&self, node_path:NodePath, property_name:&str) -> Result<String, NodePathError> {
-        let mut parent:String = if node_path.path.is_empty() { ".".into() } else { node_path.path.concat() };
+    pub fn get_node_property(&self, node_path:NodePath, _property_name:&str) -> Result<String, NodePathError> {
+        let parent:String = if node_path.path.is_empty() { ".".into() } else { node_path.path.concat() };
         
         for node in Scene::filter_elements(&self.elements, ElementType::NODE).iter() {
             if let Ok(node_parent) = node.get_data_value("parent") {
