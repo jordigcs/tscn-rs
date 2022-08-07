@@ -9,7 +9,7 @@ mod tests {
 
     #[test]
     fn tokenize() {
-        let scene = Scene::from_tscn_file(r"C:\Users\jordi\Projects\tscn\src\test.tscn");
+        let scene = Scene::from_tscn_file(r"./src/test.tscn");
         if let Ok(mut sc) = scene {
             println!("Tokens\n{:#?}", sc.elements[0].tokens);
             sc.elements[0].update_data_by_index(0, r#""Test""#);

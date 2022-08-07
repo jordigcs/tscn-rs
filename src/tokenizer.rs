@@ -164,7 +164,7 @@ impl Tokenizer {
         let mut current_line:u16 = 0;
         let mut line_beginning_char_index:usize = 0;
         let mut index:usize = 0;
-        println!("LL {}",  line_count);
+        
         'lines: for _ in 0..line_count {
             let mut line = String::new();
             reader.read_line(&mut line);
