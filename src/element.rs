@@ -40,7 +40,7 @@ impl Element {
         Element { element_name: String::from("Undefined"), element_type:ElementType::UNKOWN, element_data: Vec::new(), properties: Vec::new(), tokens: Vec::new() }
     }
     
-    pub fn update_tokens(&mut self) {
+    pub fn force_update_tokens(&mut self) {
         let mut tokens:Vec<Token> = vec![Token::BracketLeft, Token::ElementName(Some(self.element_name.clone()))]; // Elements start with [element_name
         
         // Append ElementData tokens.
@@ -66,6 +66,56 @@ impl Element {
 
         // Update complete.
         self.tokens = tokens;
+    }
+
+    pub fn get_data_value(&self, data_name:&str) -> Result<String, ()> {
+        for data in self.element_data.iter() {
+            if data.0 == data_name {
+                return Ok(data.1.clone());
+            }
+        }
+        Err(())
+    }
+
+    pub fn update_data(&mut self, data_name:&str, new_value:&str) -> Result<(), ()> {
+        let mut found = false;
+        self.element_data = self.element_data.iter().map(|data| { 
+            if data.0 == data_name {
+                found = true;
+                return ElementData(data.0.clone(), String::from(new_value));
+            }
+            data.clone()
+        }).collect::<Vec<ElementData>>();
+        if found {
+            self.force_update_tokens();
+            return Ok(());
+        }
+        Err(())
+    }
+
+    pub fn update_data_by_index(&mut self, index:usize, new_value:&str) -> Result<(), ()> {
+        if let Some(data) = self.element_data.get_mut(index) {
+            data.1 = String::from(new_value);
+            self.force_update_tokens();
+            return Ok(());
+        }
+        Err(())
+    }
+
+    pub fn update_property(&mut self, property_name:&str, new_value:&str) -> Result<(), ()> {
+        let mut found = false;
+        self.properties = self.properties.iter().map(|prop| { 
+            if prop.0 == property_name {
+                found = true;
+                return Property(prop.0.clone(), String::from(new_value));
+            }
+            prop.clone()
+        }).collect::<Vec<Property>>();
+        if found {
+            self.force_update_tokens();
+            return Ok(());
+        }
+        Err(())
     }
 }
 

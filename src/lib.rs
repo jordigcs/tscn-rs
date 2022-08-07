@@ -5,17 +5,17 @@ mod element;
 
 #[cfg(test)]
 mod tests {
-    use crate::{loader};
+    use crate::{loader, scene::{NodePath, Scene}};
 
     #[test]
     fn tokenize() {
-        let scene = loader::load(r"C:\Users\jordi\Projects\tscn\src\test.tscn");
+        let scene = Scene::from_tscn_file(r"C:\Users\jordi\Projects\tscn\src\test.tscn");
         if let Ok(mut sc) = scene {
             println!("Tokens\n{:#?}", sc.elements[0].tokens);
-            sc.elements[0].element_data[0].1 = String::from("Test");
-            sc.elements[0].update_tokens();
+            sc.elements[0].update_data_by_index(0, r#""Test""#);
             println!("Updated Tokens\n{:#?}", sc.elements[0].tokens);
-            println!("RECONSTRUCT!\n{}", sc.to_tscn());
+            println!("REC {}", sc.tokenizer.to_tscn_content());
+            println!("{:#?}", sc.get_node_property(NodePath::from("Tree/StaticBody2D/CollisionShape2D"), "Test"));
         }
     }
 }

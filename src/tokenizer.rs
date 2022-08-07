@@ -1,4 +1,4 @@
-use std::{ops::Deref, rc::Rc};
+use std::{ops::Deref, rc::Rc, io::{BufReader, Read, BufRead}, fs::File};
 
 use crate::{element::{Element, ExpectedType, ElementData, ElementType, Property}};
 
@@ -158,147 +158,151 @@ impl Tokenizer {
         new
     }
 
-    pub fn tokenize(tscn:&str) -> Result<Tokenizer, TokenizerError> {
+    pub fn tokenize(mut reader:BufReader<File>, line_count:usize) -> Result<Tokenizer, TokenizerError> {
         let mut tokenizer = Tokenizer { elements: Vec::new(), tokens: Vec::new(), current_string:None, in_quote: false, current_string_completed: false, };
         let mut next_token:Option<Token> = None;
-        for (index, c) in tscn.chars().enumerate() {
-            let mut current_token:Token = Token::Unresolved;
+        let mut current_line:u16 = 0;
+        let mut line_beginning_char_index:usize = 0;
+        let mut index:usize = 0;
+        println!("LL {}",  line_count);
+        'lines: for _ in 0..line_count {
+            let mut line = String::new();
+            reader.read_line(&mut line);
+            println!("{}", line);
+            'chars: for (index, c) in line.chars().enumerate() {
+                let mut current_token:Token = Token::Unresolved;
 
-            if let Some(next) = &next_token {
-                match next {
-                    Token::Invalid => {
-                        return Err(TokenizerError::InvalidChar(index));
-                    },
-                    Token::SkipTo(new_next_token) => {
-                        next_token = Some(new_next_token.deref().clone());
-                        continue;
-                    },
-                    _ => {}
+                if let Some(next) = &next_token {
+                    match next {
+                        Token::Invalid => {
+                            return Err(TokenizerError::InvalidChar(index));
+                        },
+                        Token::SkipTo(new_next_token) => {
+                            next_token = Some(new_next_token.deref().clone());
+                            continue 'chars;
+                        },
+                        _ => {}
+                    }
                 }
-            }
-
-            match c {
-                '[' => {
-                    let mut is_value:bool = false;
-                     if let Some(next) = &next_token {
-                         if let Token::PropertyValue(_) | Token::ElementDataValue(..) = next {
-                            is_value = true;
-                        }
-                    }
-                   if !is_value {
-                        current_token = Token::BracketLeft;
-                        next_token = Some(Token::ElementName(None));
-                  }
-                },
-                ']' => {
-                    if let Some(next) = &next_token {
-                        match next {
-                            Token::ElementDataValue(..) => {
-                                next_token = None;
-                                let token_value = tokenizer.consume_current_string();
-                                tokenizer.tokens.push(Token::ElementDataValue(token_value));
-                            },
-                            Token::PropertyValue(..) => {
-                                next_token = None;
-                                let token_value = tokenizer.consume_current_string();
-                                tokenizer.tokens.push(Token::PropertyValue(token_value));
+                match c {
+                    '[' => {
+                        let mut is_value:bool = false;
+                        if let Some(next) = &next_token {
+                            if let Token::PropertyValue(_) | Token::ElementDataValue(..) = next {
+                                is_value = true;
                             }
-                            _ => {}
                         }
+                    if !is_value {
+                            current_token = Token::BracketLeft;
+                            next_token = Some(Token::ElementName(None));
                     }
-                    current_token = Token::BracketRight;
-                },
-                '\n' => {
-                    let mut token_mutated:bool = false;
-                    if let Some(last) = tokenizer.tokens.last() {
-                        match last {
-                            Token::BracketRight => {
-                                next_token = Some(Token::PropertyName(None));
-                                token_mutated = true;
-                            },
-                            _ => {}
-                        }
-                    }
-                    if !token_mutated {
+                    },
+                    ']' => {
                         if let Some(next) = &next_token {
                             match next {
+                                Token::ElementDataValue(..) => {
+                                    next_token = None;
+                                    let token_value = tokenizer.consume_current_string();
+                                    tokenizer.tokens.push(Token::ElementDataValue(token_value));
+                                },
                                 Token::PropertyValue(..) => {
+                                    next_token = None;
+                                    let token_value = tokenizer.consume_current_string();
+                                    tokenizer.tokens.push(Token::PropertyValue(token_value));
+                                }
+                                _ => {}
+                            }
+                        }
+                        current_token = Token::BracketRight;
+                    },
+                    '\n' => {
+                        current_line += 1;
+                        line_beginning_char_index = index;
+                        let mut token_mutated:bool = false;
+                        if let Some(last) = tokenizer.tokens.last() {
+                            match last {
+                                Token::BracketRight => {
                                     next_token = Some(Token::PropertyName(None));
-                                    let prop_value = tokenizer.consume_current_string();
-                                    tokenizer.tokens.push(Token::PropertyValue(prop_value));
+                                    token_mutated = true;
                                 },
                                 _ => {}
                             }
                         }
+                        current_token = Token::NewLine;
                     }
-                    current_token = Token::NewLine;
-                }
-                _ => {
-                    if let Some(next) = &next_token {
-                        match next {
-                            Token::ElementName(..) => {
-                                tokenizer.append_current_string(c, &[' ']);
-                                if tokenizer.current_string_completed {
-                                    next_token = Some(Token::ElementDataName(None));
-                                    current_token = Token::ElementName(tokenizer.consume_current_string());
-                                }
-                                else {
-                                    continue;
-                                }
-                            },
-                            Token::ElementDataName(..) => {
-                                tokenizer.append_current_string(c, &[' ', '=']);
-                                if tokenizer.current_string_completed {
-                                    // skip '=' and jump to ElementDataValue
-                                    next_token = Some(Token::ElementDataValue(None));
-                                    current_token = Token::ElementDataName(tokenizer.consume_current_string());
-                                }
-                                else {
-                                    continue;
-                                }
-                            },
-                            Token::ElementDataValue(..) => {
-                                tokenizer.append_current_string(c,  &[' ']);
-                                if tokenizer.current_string_completed {
-                                    next_token = Some(Token::ElementDataName(None));
-                                    current_token = Token::ElementDataValue(tokenizer.consume_current_string());
-                                }
-                                else {
-                                    continue;
-                                }
-                            },
-                            Token::PropertyName(..) => {
-                                tokenizer.append_current_string(c, &[' ', '=']);
-                                if tokenizer.current_string_completed {
-                                    if let Some(next_char) = tscn.chars().nth(index+1) {
-                                        if next_char == '=' {
-                                            // skip '=' and jump to PropertyValue
-                                            next_token = Some(Token::SkipTo(Rc::new(Token::PropertyValue(None))));
-                                            current_token = Token::PropertyName(tokenizer.consume_current_string());
+                    _ => {
+                        if let Some(next) = &next_token {
+                            match next {
+                                Token::ElementName(..) => {
+                                    tokenizer.append_current_string(c, &[' ']);
+                                    if tokenizer.current_string_completed {
+                                        next_token = Some(Token::ElementDataName(None));
+                                        current_token = Token::ElementName(tokenizer.consume_current_string());
+                                    }
+                                    else {
+                                        continue 'chars;
+                                    }
+                                },
+                                Token::ElementDataName(..) => {
+                                    tokenizer.append_current_string(c, &[' ', '=']);
+                                    if tokenizer.current_string_completed {
+                                        // skip '=' and jump to ElementDataValue
+                                        next_token = Some(Token::ElementDataValue(None));
+                                        current_token = Token::ElementDataName(tokenizer.consume_current_string());
+                                    }
+                                    else {
+                                        continue 'chars;
+                                    }
+                                },
+                                Token::ElementDataValue(..) => {
+                                    tokenizer.append_current_string(c,  &[' ']);
+                                    if tokenizer.current_string_completed {
+                                        next_token = Some(Token::ElementDataName(None));
+                                        current_token = Token::ElementDataValue(tokenizer.consume_current_string());
+                                    }
+                                    else {
+                                        continue 'chars;
+                                    }
+                                },
+                                Token::PropertyName(..) => {
+                                    tokenizer.append_current_string(c, &[' ', '=']);
+                                    if tokenizer.current_string_completed {
+                                        if let Some(next_char) = line.chars().nth(index+1) {
+                                            if next_char == '=' {
+                                                // skip '=' and jump to PropertyValue
+                                                next_token = Some(Token::SkipTo(Rc::new(Token::PropertyValue(None))));
+                                                current_token = Token::PropertyName(tokenizer.consume_current_string());
+                                            }
+                                        }
+                                        else {
+                                            return Err(TokenizerError::EarlyEOF);
                                         }
                                     }
                                     else {
-                                        return Err(TokenizerError::EarlyEOF);
+                                        continue 'chars;
                                     }
-                                }
-                                else {
+                                },
+                                Token::PropertyValue(..) => {
+                                    // Read entire line starting at prop value start, then continue to next.
+                                    // Saves time from reading chars we don't need to analyze.
+                                    tokenizer.current_string = Some(String::from(&line[index..]));
+                                    tokenizer.current_string_completed = true;
+                                    next_token = Some(Token::PropertyName(None));
+                                    let prop_value = tokenizer.consume_current_string();
+                                    tokenizer.tokens.push(Token::PropertyValue(prop_value));
+                                    tokenizer.tokens.push(Token::NewLine);
+                                    continue 'lines;
+                                },
+                                _ => {
                                     continue;
                                 }
-                            },
-                            Token::PropertyValue(..) => {
-                                tokenizer.append_current_string(c, &[]);
-                                // current_string is consumed in the '\n' match branch since property values can only be single line.
-                                continue;
-                            },
-                            _ => {
-                                continue;
                             }
                         }
                     }
                 }
+                tokenizer.in_quote = false;
+                tokenizer.tokens.push(current_token);
             }
-            tokenizer.in_quote = false;
-            tokenizer.tokens.push(current_token);
         }
         match tokenizer.elements_from_tokens() {
             Ok(elements) => {
