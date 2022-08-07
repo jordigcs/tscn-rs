@@ -63,7 +63,7 @@ impl From<&str> for NodePath {
 }
 
 impl Scene {
-    pub fn filter_elements<'a>(elements:&Vec<Element>, element_type:ElementType) -> Vec<&Element> {
+    pub fn filter_elements(elements:&Vec<Element>, element_type:ElementType) -> Vec<&Element> {
         elements.into_iter().filter(|element| element.element_type == element_type).collect::<Vec<&Element>>()
     }
 
