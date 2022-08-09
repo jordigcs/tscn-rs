@@ -1,4 +1,4 @@
-use crate::tokenizer::Token;
+use crate::{tokenizer::Token, scene::{NodePath, NodePathError}};
 
 
 #[derive(Debug, Clone)]
@@ -61,6 +61,7 @@ impl Element {
                     v
                 }).collect()
             );
+            println!("{:?}", tokens);
             tokens.push(Token::NewLine);
         }
 
@@ -104,18 +105,28 @@ impl Element {
 
     pub fn update_property(&mut self, property_name:&str, new_value:&str) -> Result<(), ()> {
         let mut found = false;
-        self.properties = self.properties.iter().map(|prop| { 
+        for (index, prop) in self.properties.iter().enumerate() {
             if prop.0 == property_name {
                 found = true;
-                return Property(prop.0.clone(), String::from(new_value));
+                self.properties[index] = Property(prop.0.clone(), String::from(new_value));
+                break;
             }
-            prop.clone()
-        }).collect::<Vec<Property>>();
+        }
         if found {
             self.force_update_tokens();
             return Ok(());
         }
         Err(())
+    }
+
+    pub fn get_property_value(&self, property_name:&str) -> Result<String, NodePathError> {
+        println!("{:?}", self.properties);
+        for prop in self.properties.iter() {
+            if prop.0 == property_name {
+                return Ok(prop.1.clone());
+            }
+        }
+        Err(NodePathError::PropertyNotFound)
     }
 }
 

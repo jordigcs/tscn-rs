@@ -14,8 +14,7 @@ mod tests {
             println!("Tokens\n{:#?}", sc.elements[0].tokens);
             sc.elements[0].update_data_by_index(0, r#""Test""#);
             println!("Updated Tokens\n{:#?}", sc.elements[0].tokens);
-            println!("REC {}", sc.tokenizer.to_tscn_content());
-            println!("{:#?}", sc.get_node_property(NodePath::from("Tree/StaticBody2D/CollisionShape2D"), "Test"));
+            println!("{:#?}", sc.get_node_property(NodePath::from("Tree/StaticBody2D/CollisionShape2D"), "test"));
         }
     }
 }

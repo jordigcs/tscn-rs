@@ -164,11 +164,10 @@ impl Tokenizer {
         let mut current_line:u16 = 0;
         let mut line_beginning_char_index:usize = 0;
         let _index:usize = 0;
-        
+        // Todo: Allow brackets in ElementDataValues
         'lines: for _ in 0..line_count {
             let mut line = String::new();
             reader.read_line(&mut line);
-            println!("{}", line);
             'chars: for (index, c) in line.chars().enumerate() {
                 let mut current_token:Token = Token::Unresolved;
 

@@ -71,21 +71,24 @@ impl Scene {
         self.elements.append(&mut elements);
     }
 
-    pub fn get_node_property(&self, node_path:NodePath, _property_name:&str) -> Result<String, NodePathError> {
-        let parent:String = if node_path.path.is_empty() { ".".into() } else { node_path.path.concat() };
-        
-        for node in Scene::filter_elements(&self.elements, ElementType::NODE).iter() {
+    pub fn get_node_property(&self, node_path:NodePath, property_name:&str) -> Result<String, NodePathError> {
+        let parent:String = if !node_path.path.is_empty() { "\"".to_owned() + &node_path.path.join("/") + "\""  } else { ".".into() };
+        println!("{}", parent);
+        for node in Scene::filter_elements(&self.elements, ElementType::NODE).into_iter() {
             if let Ok(node_parent) = node.get_data_value("parent") {
+                println!("{}", node_parent);
                 if node_parent == parent {
+                    println!("FOUND OPARENT");
                     if let Ok(node_name) = node.get_data_value("name") {
-                        if node_name == node_path.node_name {
-                            println!("Found node!");
+                        println!("{}", Tokenizer::reconstruct_tscn_from_tokens(node.tokens.clone()));
+                        if node_name == "\"".to_owned() + &node_path.node_name + "\"" {
+                            return node.get_property_value(property_name);
                         }
                     }
                 }
             }
         }
-        Ok(String::new())
+        Err(NodePathError::NodeNotFound)
     }
 
     pub fn to_tscn(self) -> String {
